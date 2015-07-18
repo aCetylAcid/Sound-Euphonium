@@ -50,14 +50,23 @@ class Downloader:
 class Consts:
     TARGET_CHANNELS = [u"euphonium", u"gg"]
     BASE_URL_GET_CHANNEL_INFO = u"http://www.onsen.ag/data/api/getMovieInfo/{channel_id}"
-    RADIO_SAVE_PATH = u"./radio/{channel_id}/"
+    USER_SETTING_FILE_PATH = "./user_settings.json"
+
+
+class UserSettings:
+    @staticmethod
+    def get(key):
+        # load setting file
+        setting_file = open(Consts.USER_SETTING_FILE_PATH, "r")
+        settings = json.loads(setting_file.read())
+        return settings[key]
 
 
 class Utils:
     # Dir path to save channel
     @staticmethod
     def radio_save_path(channel):
-        return Consts.RADIO_SAVE_PATH.format(channel_id=channel.id)
+        return UserSettings.get("radio_save_path").format(channel_id=channel.id)
 
     # URL to get channel info
     @staticmethod
