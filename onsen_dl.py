@@ -48,7 +48,6 @@ class Downloader:
 
 
 class Consts:
-    TARGET_CHANNELS = [u"euphonium", u"gg"]
     BASE_URL_GET_CHANNEL_INFO = u"http://www.onsen.ag/data/api/getMovieInfo/{channel_id}"
     USER_SETTING_FILE_PATH = "./user_settings.json"
 
@@ -88,10 +87,10 @@ if __name__ == "__main__":
                         filename='dl.log',
                         level=logging.DEBUG)
 
-    # Download all TARGET_CHANNELS
+    # Download all channels
     logging.info("Donwload begin.")
 
-    channel_ids = Consts.TARGET_CHANNELS
+    channel_ids = UserSettings.get("channels")
     for c_id in channel_ids:
         logging.info("Downloading channel: " + c_id)
         try:

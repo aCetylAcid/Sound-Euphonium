@@ -1,3 +1,4 @@
 {
-    "radio_save_path": "./radio/cache/{channel_id}/"
+    "radio_save_path": "./radio/{channel_id}/",
+    "channels": ["euphonium", "gg"]
 }
