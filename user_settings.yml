@@ -1,0 +1,8 @@
+radio_save_path: "./radio/{channel_id}/"
+channels: ["euphonium", "gg"]
+# twitter_settings:
+#     consumer_key: ""
+#     consumter_secret: ""
+#     access_token_key: ""
+#     access_token_secret: ""
+#     in_reply_to: ""

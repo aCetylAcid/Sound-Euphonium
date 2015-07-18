@@ -1,2 +1,3 @@
 radio/
-dl.log
+info.log
+*.pyc
