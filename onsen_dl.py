@@ -58,7 +58,10 @@ class UserSettings:
         # load setting file
         setting_file = open(Consts.USER_SETTING_FILE_PATH, "r")
         settings = json.loads(setting_file.read())
-        return settings[key]
+        if key in settings:
+            return settings[key]
+        else:
+            return None
 
 
 class Utils:
