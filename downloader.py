@@ -127,43 +127,48 @@ class Twitter:
         self.post(message)
 
 
-if __name__ == "__main__":
-    # Setup loggin
-    logging.basicConfig(format='%(levelname)s %(asctime)s %(message)s',
-                        filename='info.log',
-                        level=logging.INFO)
+class Main:
+    @staticmethod
+    def main():
+        # Setup loggin
+        logging.basicConfig(format='[%(levelname)s]%(asctime)s %(message)s',
+                            filename='info.log',
+                            level=logging.INFO)
 
-    # Setup notification
-    if UserSettings.get("twitter_settings") is not None:
-        tw_settings = UserSettings.get("twitter_settings")
-        twitter = Twitter(tw_settings["consumer_key"],
-                          tw_settings["consumter_secret"],
-                          tw_settings["access_token_key"],
-                          tw_settings["access_token_secret"])
-        if tw_settings["in_reply_to"] is not None:
-            twitter.set_in_reply_to(tw_settings["in_reply_to"])
-    else:
-        twitter = Twitter()
-
-    # Download all channels
-    logging.info("Donwload begin.")
-
-    channel_ids = UserSettings.get("channels")
-    for c_id in channel_ids:
-        logging.info("Downloading channel: " + c_id)
-        try:
-            c = Channel(c_id)
-            c.load_channel_info()
-            Downloader.downloadChannel(c)
-        except BusinessException, e:
-            logging.info("Not downloaded: " + c_id)
-            logging.info("\n" + e.value)
-        except Exception, e:
-            logging.error("Download interrupted: " + c_id)
-            logging.error(traceback.format_exc())
-            twitter.notify_dl_error(c_id)
+        # Setup notification
+        if UserSettings.get("twitter_settings") is not None:
+            tw_settings = UserSettings.get("twitter_settings")
+            twitter = Twitter(tw_settings["consumer_key"],
+                              tw_settings["consumter_secret"],
+                              tw_settings["access_token_key"],
+                              tw_settings["access_token_secret"])
+            if tw_settings["in_reply_to"] is not None:
+                twitter.set_in_reply_to(tw_settings["in_reply_to"])
         else:
-            logging.info("Download complete: " + c_id)
-            twitter.notify_dl_completion(c)
+            twitter = Twitter()
 
-    logging.info("Download finish.")
+        # Download all channels
+        logging.info("Donwload begin.")
+
+        channel_ids = UserSettings.get("channels")
+        for c_id in channel_ids:
+            logging.info("Downloading channel: " + c_id)
+            try:
+                c = Channel(c_id)
+                c.load_channel_info()
+                Downloader.downloadChannel(c)
+            except BusinessException, e:
+                logging.info("Not downloaded: " + c_id + ", because: " + e.value)
+            except Exception, e:
+                logging.error("Download interrupted: " + c_id)
+                logging.error(traceback.format_exc())
+                twitter.notify_dl_error(c_id)
+            else:
+                logging.info("Download complete: " + c_id)
+                twitter.notify_dl_completion(c)
+
+        logging.info("Download finish.")
+
+
+if __name__ == "__main__":
+    Main.main()
