@@ -121,14 +121,14 @@ class Twitter:
         self.in_reply_to = in_reply_to
 
     def notify_dl_completion(self, channel):
-        message = u"録画が完了しました: 『{title} {count}話』 [{date}]"\
+        message = u"録音が完了しました: 『{title} {count}話』 [{date}]"\
                   .format(title=channel.title,
                           count=channel.count,
                           date=channel.updated_at)
         self.post(message)
 
     def notify_dl_error(self, ch_id):
-        message = u"録画中に例外が発生しました: {ch_id},{date}".format(ch_id=ch_id,
+        message = u"録音中に例外が発生しました: {ch_id},{date}".format(ch_id=ch_id,
                   date=datetime.now().strftime(u"%Y/%m/%d/ %H:%M"))
         self.post(message)
 
