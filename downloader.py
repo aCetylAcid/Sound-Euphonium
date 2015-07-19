@@ -53,7 +53,7 @@ class Downloader:
 
 class Consts:
     BASE_URL_GET_CHANNEL_INFO = u"http://www.onsen.ag/data/api/getMovieInfo/{channel_id}"
-    USER_SETTING_FILE_PATH = "./user_settings.yml"
+    USER_SETTING_FILE_PATH = os.path.abspath(os.path.dirname(__file__)) + "/user_settings.yml"
 
 
 class UserSettings:
