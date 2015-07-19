@@ -53,7 +53,7 @@ class Downloader:
 
 class Consts:
     BASE_URL_GET_CHANNEL_INFO = u"http://www.onsen.ag/data/api/getMovieInfo/{channel_id}"
-    USER_SETTING_FILE_PATH = "./user_settings.yml"
+    USER_SETTING_FILE_PATH = os.path.abspath(os.path.dirname(__file__)) + "/user_settings.yml"
 
 
 class UserSettings:
@@ -72,7 +72,13 @@ class Utils:
     # Dir path to save channel
     @staticmethod
     def radio_save_path(channel):
-        return UserSettings.get("radio_save_path").format(channel_id=channel.id)
+        home = os.environ['HOME']
+        script_dir = os.path.abspath(os.path.dirname(__file__))
+        path = UserSettings.get("radio_save_path")\
+                           .format(channel_id=channel.id)\
+                           .replace("~", home)\
+                           .replace("./", script_dir + "/")
+        return path
 
     # URL to get channel info
     @staticmethod
