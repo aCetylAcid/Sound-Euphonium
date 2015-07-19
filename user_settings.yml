@@ -1,4 +1,4 @@
-radio_save_path: "./radio/{channel_id}/"
+radio_save_path: "~/radio/{channel_id}/"
 channels: ["euphonium", "gg"]
 # twitter_settings:
 #     consumer_key: ""
