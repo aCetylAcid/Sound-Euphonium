@@ -72,7 +72,10 @@ class Utils:
     # Dir path to save channel
     @staticmethod
     def radio_save_path(channel):
-        return UserSettings.get("radio_save_path").format(channel_id=channel.id)
+        home = os.environ['HOME']
+        path = UserSettings.get("radio_save_path").format(channel_id=channel.id)\
+                                                  .replace("~", home)
+        return path
 
     # URL to get channel info
     @staticmethod
