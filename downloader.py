@@ -141,8 +141,8 @@ class Utils:
         tag.album = Consts.DEFAULT_ALBUM_TITLE\
                           .format(channel_title=channel.title)
         tag.title = Consts.DEFAULT_TRACK_TITLE\
-                          .format(count=channel.count)\
-                          .format(update=channel.updated_at)
+                          .format(count=channel.count,
+                                  update=channel.updated_at)
 
         tag.images.set(eyed3.id3.frames.ImageFrame.OTHER,
                        open(cover_img_path, "rb").read(),
