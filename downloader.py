@@ -67,6 +67,9 @@ class Downloader:
         if not os.path.exists(tmp_dir_path):
             os.makedirs(tmp_dir_path)
 
+        if os.path.exists(thumb_file_path):
+            os.remove(thumb_file_path)
+
         out = open(thumb_file_path, "wb")
         out.write(response.read())
 
