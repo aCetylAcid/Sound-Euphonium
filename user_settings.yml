@@ -1,3 +1,4 @@
+tmp_dir_path: "./tmp/"
 radio_save_path: "~/radio/{channel_id}/"
 channels: ["euphonium", "gg"]
 # twitter_settings:

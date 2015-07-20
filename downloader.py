@@ -8,16 +8,19 @@ import traceback
 import yaml
 from datetime import datetime
 from TwitterAPI import TwitterAPI
+import eyed3
 
 
 class Channel:
     def __init__(self, channel_id):
-        self.id = channel_id   # Channel Id(Ex: euphonium)
-        self.count = 0         # Count
-        self.sound_url = u""   # Sound URL
-        self.title = u""       # Title of Channel
-        self.file_name = u""   # Original file Name
-        self.updated_at = u""  # Update Date(String)
+        self.id = channel_id        # Channel Id(Ex: euphonium)
+        self.count = 0              # Count
+        self.sound_url = u""        # Sound URL
+        self.title = u""            # Title of Channel
+        self.file_name = u""        # Original file Name
+        self.updated_at = u""       # Update Date(String)
+        self.thumb_url = u""       # thumbnail path(image)
+        self.thumb_file_name = u""  # thumbnail file name
 
     # Load channel information from API
     def load_channel_info(self):
@@ -30,10 +33,12 @@ class Channel:
         self.title = r_json["title"]
         self.file_name = (r_json["moviePath"])["pc"].split("/")[-1]
         self.updated_at = r_json["update"]
+        self.thumb_url = Consts.BASE_URL + r_json["thumbnailPath"]
+        self.thumb_file_name = r_json["thumbnailPath"].split("/")[-1]
 
 
 class Downloader:
-    # 番組をダウンロードする
+    # Download Channel
     @staticmethod
     def downloadChannel(channel):
         response = urllib2.urlopen(channel.sound_url)
@@ -50,10 +55,31 @@ class Downloader:
         out = open(dir_path + channel.file_name, "wb")
         out.write(response.read())
 
+        # embed id3 tag
+        Utils.embed_id3_tag(dir_path + channel.file_name, channel)
+
+    @staticmethod
+    def download_thumbnail(channel):
+        response = urllib2.urlopen(channel.thumb_url)
+        tmp_dir_path = Utils.tmp_dir_path()
+        thumb_file_path = tmp_dir_path + channel.thumb_file_name
+
+        if not os.path.exists(tmp_dir_path):
+            os.makedirs(tmp_dir_path)
+
+        out = open(thumb_file_path, "wb")
+        out.write(response.read())
+
+        return thumb_file_path
+
 
 class Consts:
+    BASE_URL = u"http://www.onsen.ag"
     BASE_URL_GET_CHANNEL_INFO = u"http://www.onsen.ag/data/api/getMovieInfo/{channel_id}"
     USER_SETTING_FILE_PATH = os.path.abspath(os.path.dirname(__file__)) + "/user_settings.yml"
+    DEFAULT_ARTIST_NAME = u"onsen"
+    DEFAULT_ALBUM_TITLE = u"{channel_title}"
+    DEFAULT_TRACK_TITLE = u"第{count}回"
 
 
 class UserSettings:
@@ -75,15 +101,50 @@ class Utils:
         home = os.environ['HOME']
         script_dir = os.path.abspath(os.path.dirname(__file__))
         path = UserSettings.get("radio_save_path")\
-                           .format(channel_id=channel.id)\
+                           .replace("{channel_id}", channel.id)\
+                           .replace("{channel_title}", channel.title)\
                            .replace("~", home)\
                            .replace("./", script_dir + "/")
+        return path
+
+    # Dir path to save temporary files
+    @staticmethod
+    def tmp_dir_path():
+        home = os.environ['HOME']
+        script_dir = os.path.abspath(os.path.dirname(__file__))
+        if UserSettings.get("tmp_dir_path") is None:
+            path = script_dir + "/"
+        else:
+            path = UserSettings.get("tmp_dir_path")\
+                               .replace("~", home)\
+                               .replace("./", script_dir + "/")
         return path
 
     # URL to get channel info
     @staticmethod
     def url_get_channel_info(channel_id):
-        return Consts.BASE_URL_GET_CHANNEL_INFO.format(channel_id=channel_id)
+        return Consts.BASE_URL_GET_CHANNEL_INFO\
+                     .replace("{channel_id}", channel_id)
+
+    @staticmethod
+    def embed_id3_tag(file_path, channel):
+        cover_img_path = Downloader.download_thumbnail(channel)
+
+        tag = eyed3.load(file_path).tag
+        tag.version = eyed3.id3.ID3_V2_4
+        tag.encoding = eyed3.id3.UTF_8_ENCODING
+        tag.artist = Consts.DEFAULT_ARTIST_NAME
+        tag.album_artist = Consts.DEFAULT_ARTIST_NAME
+        tag.album = Consts.DEFAULT_ALBUM_TITLE\
+                          .format(channel_title=channel.title)
+        tag.title = Consts.DEFAULT_TRACK_TITLE\
+                          .format(count=channel.count)
+        tag.images.set(eyed3.id3.frames.ImageFrame.OTHER,
+                       open(cover_img_path, "rb").read(),
+                       "image/jpeg")
+
+        tag.track_num = int(channel.count)
+        tag.save()
 
 
 class BusinessException(Exception):
