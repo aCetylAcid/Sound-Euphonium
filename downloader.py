@@ -79,7 +79,7 @@ class Consts:
     USER_SETTING_FILE_PATH = os.path.abspath(os.path.dirname(__file__)) + "/user_settings.yml"
     DEFAULT_ARTIST_NAME = u"onsen"
     DEFAULT_ALBUM_TITLE = u"{channel_title}"
-    DEFAULT_TRACK_TITLE = u"第{count}回"
+    DEFAULT_TRACK_TITLE = u"第{count}回 ({update}更新)"
 
 
 class UserSettings:
@@ -138,7 +138,9 @@ class Utils:
         tag.album = Consts.DEFAULT_ALBUM_TITLE\
                           .format(channel_title=channel.title)
         tag.title = Consts.DEFAULT_TRACK_TITLE\
-                          .format(count=channel.count)
+                          .format(count=channel.count)\
+                          .format(update=channel.updated_at)
+
         tag.images.set(eyed3.id3.frames.ImageFrame.OTHER,
                        open(cover_img_path, "rb").read(),
                        "image/jpeg")
