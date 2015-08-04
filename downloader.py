@@ -24,7 +24,12 @@ class Channel:
 
     # Load channel information from API
     def load_channel_info(self):
-        response = urllib2.urlopen(Utils.url_get_channel_info(self.id))
+        try:
+            response = urllib2.urlopen(Utils.url_get_channel_info(self.id))
+        except urllib2.HTTPError, e:
+            if e.code == 404:
+                message = "This channel may not be published."
+                raise BusinessException(message)
         r_str = response.read().encode('utf-8')[9:-3]
         r_json = json.loads(r_str)
 
@@ -41,7 +46,13 @@ class Downloader:
     # Download Channel
     @staticmethod
     def downloadChannel(channel):
-        response = urllib2.urlopen(channel.sound_url)
+
+        try:
+            response = urllib2.urlopen(channel.sound_url)
+        except urllib2.HTTPError, e:
+            if e.code == 404:
+                message = "This episode may not be published."
+                raise BusinessException(message)
 
         dir_path = Utils.radio_save_path(channel)
         if not os.path.exists(dir_path):
@@ -193,9 +204,11 @@ class Twitter:
                           date=channel.updated_at)
         self.post(message)
 
-    def notify_dl_error(self, ch_id):
-        message = u"録音中に例外が発生しました: {ch_id},{date}".format(ch_id=ch_id,
-                  date=datetime.now().strftime(u"%Y/%m/%d/ %H:%M"))
+    def notify_dl_error(self, ch_id, message=None):
+        if message is None:
+            message = u"録音中に例外が発生しました: {ch_id},{date}".format(ch_id=ch_id, date=datetime.now().strftime(u"%Y/%m/%d/ %H:%M"))
+        else:
+            message = u"録音中に例外が発生しました: {ch_id},{date}:{message}".format(ch_id=ch_id, date=datetime.now().strftime(u"%Y/%m/%d/ %H:%M"), message=message)
         self.post(message)
 
 
@@ -230,7 +243,9 @@ class Main:
                 c.load_channel_info()
                 Downloader.downloadChannel(c)
             except BusinessException, e:
-                logging.info("Not downloaded: " + c_id + ", because: " + e.value)
+                msg = "Not downloaded: " + c_id + ", because: " + e.value
+                logging.info(msg)
+                twitter.notify_dl_error(c_id, msg)
             except Exception, e:
                 logging.error("Download interrupted: " + c_id)
                 logging.error(traceback.format_exc())
