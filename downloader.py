@@ -14,7 +14,7 @@ import eyed3
 class Channel:
     def __init__(self, channel_id):
         self.id = channel_id        # Channel Id(Ex: euphonium)
-        self.count = 0              # Count
+        self.count = u""            # Count
         self.sound_url = u""        # Sound URL
         self.title = u""            # Title of Channel
         self.file_name = u""        # Original file Name
@@ -33,7 +33,7 @@ class Channel:
         r_str = response.read().encode('utf-8')[9:-3]
         r_json = json.loads(r_str)
 
-        self.count = int(r_json["count"])
+        self.count = r_json["count"]
         self.sound_url = (r_json["moviePath"])["pc"]
         self.title = r_json["title"]
         self.file_name = (r_json["moviePath"])["pc"].split("/")[-1]
@@ -159,7 +159,11 @@ class Utils:
                        open(cover_img_path, "rb").read(),
                        "image/jpeg")
 
-        tag.track_num = int(channel.count)
+        try:
+            tag.track_num = int(channel.count)
+        except ValueError:
+            tag.track_num = 0
+
         tag.save()
 
 
