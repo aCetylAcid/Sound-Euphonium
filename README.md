@@ -17,16 +17,17 @@
   * python(v2.7)
   * pip
   * git
-2. pip経由で依存するパッケージをインストール
 
-    ~~~bash
-    pip install -r requirements.txt
-    ~~~
-
-3. プロジェクトをクローン
+2. プロジェクトをクローン
 
     ~~~bash
     git clone git@github.com:aCetylAcid/Sound-Euphonium.git
+    ~~~
+
+3. pip経由で依存するパッケージをインストール
+
+    ~~~bash
+    pip install -r requirements.txt
     ~~~
 
 
