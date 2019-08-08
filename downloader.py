@@ -58,7 +58,7 @@ class Downloader:
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
 
-        file_path = dir_path + channel.file_name
+        file_path = Utils.radio_save_file_path(channel)
         if os.path.exists(file_path):
             raise BusinessException("Already Downloaded:"
                                     + file_path)
@@ -120,6 +120,11 @@ class Utils:
                            .replace("~", home)\
                            .replace("./", script_dir + "/")
         return path
+
+    # File path to save channel
+    @staticmethod
+    def radio_save_file_path(channel):
+        return Utils.radio_save_dir_path(channel) + channel.file_name
 
     # Dir path to save temporary files
     @staticmethod
