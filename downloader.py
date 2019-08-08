@@ -250,6 +250,13 @@ class Main:
             try:
                 c = Channel(c_id)
                 c.load_channel_info()
+
+                # Skip downloading if the downloaded-file already exists
+                file_path = Utils.radio_save_file_path(c)
+                if os.path.exists(file_path):
+                    logging.info("Skipped downloading, because already downloaded: " + c_id)
+                    continue
+                
                 Downloader.downloadChannel(c)
             except BusinessException, e:
                 msg = "Not downloaded: " + c_id + ", because: " + e.value
