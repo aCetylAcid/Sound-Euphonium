@@ -54,11 +54,11 @@ class Downloader:
                 message = "This episode may not be published."
                 raise BusinessException(message)
 
-        dir_path = Utils.radio_save_path(channel)
+        dir_path = Utils.radio_save_dir_path(channel)
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
 
-        file_path = dir_path + channel.file_name
+        file_path = Utils.radio_save_file_path(channel)
         if os.path.exists(file_path):
             raise BusinessException("Already Downloaded:"
                                     + file_path)
@@ -111,7 +111,7 @@ class UserSettings:
 class Utils:
     # Dir path to save channel
     @staticmethod
-    def radio_save_path(channel):
+    def radio_save_dir_path(channel):
         home = os.environ['HOME']
         script_dir = os.path.abspath(os.path.dirname(__file__))
         path = UserSettings.get("radio_save_path")\
@@ -120,6 +120,11 @@ class Utils:
                            .replace("~", home)\
                            .replace("./", script_dir + "/")
         return path
+
+    # File path to save channel
+    @staticmethod
+    def radio_save_file_path(channel):
+        return Utils.radio_save_dir_path(channel) + channel.file_name
 
     # Dir path to save temporary files
     @staticmethod
@@ -205,14 +210,14 @@ class Twitter:
         message = u"録音が完了しました: 『{title} {count}話』 [{date}]"\
                   .format(title=channel.title,
                           count=channel.count,
-                          date=channel.updated_at)
+                          date=datetime.now().strftime(u"%Y/%m/%d %H:%M"))
         self.post(message)
 
     def notify_dl_error(self, ch_id, message=None):
         if message is None:
-            message = u"録音中に例外が発生しました: {ch_id},{date}".format(ch_id=ch_id, date=datetime.now().strftime(u"%Y/%m/%d/ %H:%M"))
+            message = u"録音中に例外が発生しました: {ch_id},{date}".format(ch_id=ch_id, date=datetime.now().strftime(u"%Y/%m/%d %H:%M"))
         else:
-            message = u"録音中に例外が発生しました: {ch_id},{date}:{message}".format(ch_id=ch_id, date=datetime.now().strftime(u"%Y/%m/%d/ %H:%M"), message=message)
+            message = u"録音中に例外が発生しました: {ch_id},{date}:{message}".format(ch_id=ch_id, date=datetime.now().strftime(u"%Y/%m/%d %H:%M"), message=message)
         self.post(message)
 
 
@@ -237,7 +242,7 @@ class Main:
             twitter = Twitter()
 
         # Download all channels
-        logging.info("Donwload begin.")
+        logging.info("Download begin.")
 
         channel_ids = UserSettings.get("channels")
         for c_id in channel_ids:
@@ -245,6 +250,13 @@ class Main:
             try:
                 c = Channel(c_id)
                 c.load_channel_info()
+
+                # Skip downloading if the downloaded-file already exists
+                file_path = Utils.radio_save_file_path(c)
+                if os.path.exists(file_path):
+                    logging.info("Skipped downloading, because already downloaded: " + c_id)
+                    continue
+                
                 Downloader.downloadChannel(c)
             except BusinessException, e:
                 msg = "Not downloaded: " + c_id + ", because: " + e.value
