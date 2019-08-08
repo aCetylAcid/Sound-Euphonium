@@ -215,9 +215,9 @@ class Twitter:
 
     def notify_dl_error(self, ch_id, message=None):
         if message is None:
-            message = u"録音中に例外が発生しました: {ch_id},{date}".format(ch_id=ch_id, date=datetime.now().strftime(u"%Y/%m/%d/ %H:%M"))
+            message = u"録音中に例外が発生しました: {ch_id},{date}".format(ch_id=ch_id, date=datetime.now().strftime(u"%Y/%m/%d %H:%M"))
         else:
-            message = u"録音中に例外が発生しました: {ch_id},{date}:{message}".format(ch_id=ch_id, date=datetime.now().strftime(u"%Y/%m/%d/ %H:%M"), message=message)
+            message = u"録音中に例外が発生しました: {ch_id},{date}:{message}".format(ch_id=ch_id, date=datetime.now().strftime(u"%Y/%m/%d %H:%M"), message=message)
         self.post(message)
 
 
