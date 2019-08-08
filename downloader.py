@@ -210,7 +210,7 @@ class Twitter:
         message = u"録音が完了しました: 『{title} {count}話』 [{date}]"\
                   .format(title=channel.title,
                           count=channel.count,
-                          date=channel.updated_at)
+                          date=datetime.now().strftime(u"%Y/%m/%d %H:%M"))
         self.post(message)
 
     def notify_dl_error(self, ch_id, message=None):
