@@ -237,7 +237,7 @@ class Main:
             twitter = Twitter()
 
         # Download all channels
-        logging.info("Donwload begin.")
+        logging.info("Download begin.")
 
         channel_ids = UserSettings.get("channels")
         for c_id in channel_ids:
