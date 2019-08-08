@@ -54,7 +54,7 @@ class Downloader:
                 message = "This episode may not be published."
                 raise BusinessException(message)
 
-        dir_path = Utils.radio_save_path(channel)
+        dir_path = Utils.radio_save_dir_path(channel)
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
 
@@ -111,7 +111,7 @@ class UserSettings:
 class Utils:
     # Dir path to save channel
     @staticmethod
-    def radio_save_path(channel):
+    def radio_save_dir_path(channel):
         home = os.environ['HOME']
         script_dir = os.path.abspath(os.path.dirname(__file__))
         path = UserSettings.get("radio_save_path")\
