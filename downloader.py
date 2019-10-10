@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import urllib2
+import urllib.request, urllib.error
 import json
 import os
 import subprocess
@@ -64,9 +64,9 @@ class Channel:
                            'X-App-Version': '25'
                     }
                 
-                req = urllib2.Request(url, None, headers)
-                response = urllib2.urlopen(req)
-            except urllib2.HTTPError, e:
+                req = urllib.request.Request(url, None, headers=headers)
+                response = urllib.request.urlopen(req)
+            except urllib.error.HTTPError as e:
                 if e.code == 404:
                     message = "This channel may not be published."
                     raise BusinessException(message)
@@ -87,12 +87,12 @@ class Channel:
            
         else:
             try:
-                response = urllib2.urlopen(Utils.url_get_channel_info(self.id))
-            except urllib2.HTTPError, e:
+                response = urllib.request.urlopen(Utils.url_get_channel_info(self.id))
+            except urllib.error.HTTPError as e:
                 if e.code == 404:
                     message = "This channel may not be published."
                     raise BusinessException(message)
-            r_str = response.read().encode('utf-8')[9:-3]
+            r_str = response.read().decode('utf-8')[9:-3]
             r_json = json.loads(r_str)
 
             self.count = r_json["count"]
@@ -145,8 +145,8 @@ class Downloader:
         else:
             # download mp3 file directly
             try:
-                response = urllib2.urlopen(channel.sound_url)
-            except urllib2.HTTPError, e:
+                response = urllib.request.urlopen(channel.sound_url)
+            except urllib.error.HTTPError as e:
                 if e.code == 404:
                     message = "This episode may not be published."
                     raise BusinessException(message)
@@ -163,7 +163,7 @@ class Downloader:
 
     @staticmethod
     def download_thumbnail(channel):
-        response = urllib2.urlopen(channel.thumb_url)
+        response = urllib.request.urlopen(channel.thumb_url)
         tmp_dir_path = Utils.tmp_dir_path()
         thumb_file_path = tmp_dir_path + channel.thumb_file_name
 
@@ -351,11 +351,11 @@ class Main:
                 
                 Downloader.downloadChannel(c)
 
-            except BusinessException, e:
+            except BusinessException as e:
                 msg = "Not downloaded: " + c_id + ", because: " + e.value
                 logging.info(msg)
                 twitter.notify_dl_error(c_id, msg)
-            except Exception, e:
+            except Exception as e:
                 logging.error("Download interrupted: " + c_id)
                 logging.error(traceback.format_exc())
                 twitter.notify_dl_error(c_id)
