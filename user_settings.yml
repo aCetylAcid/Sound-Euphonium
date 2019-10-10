@@ -1,9 +1,10 @@
 tmp_dir_path: "./tmp/"
 radio_save_path: "~/radio/{channel_id}/"
-channels: ["euphonium", "gg"]
 # twitter_settings:
 #     consumer_key: ""
 #     consumter_secret: ""
 #     access_token_key: ""
 #     access_token_secret: ""
 #     in_reply_to: ""
+channels: ["gurepa", "gurepap:562"]
+bearer_token: "hogehogefugafuga"

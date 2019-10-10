@@ -3,71 +3,163 @@
 import urllib2
 import json
 import os
+import subprocess
 import logging
 import traceback
 import yaml
 from datetime import datetime
+import dateutil.parser
 from TwitterAPI import TwitterAPI
 import eyed3
-
+import ffmpeg
 
 class Channel:
     def __init__(self, channel_id):
-        self.id = channel_id        # Channel Id(Ex: euphonium)
+        channel_ids = channel_id.split(":")
+        self.id = channel_ids[0]  # Channel Id(Ex: euphonium)
+
+        if len(channel_ids) > 1:
+            self.num_id = channel_id.split(u":")[1]  # Channel number Id(Ex: 540)
+        else:
+            self.num_id = u""  # Channel number Id(Ex: 540)
+
         self.count = u""            # Count
         self.sound_url = u""        # Sound URL
+        self.m3u8_file_url= u""     # m3u8 file URL
         self.title = u""            # Title of Channel
         self.file_name = u""        # Original file Name
         self.updated_at = u""       # Update Date(String)
-        self.thumb_url = u""       # thumbnail path(image)
+        self.thumb_url = u""        # thumbnail path(image)
         self.thumb_file_name = u""  # thumbnail file name
+
+    def file_name_without_extension(self):
+        arr = self.file_name.split(".")
+        arr.pop()
+        return ".".join(arr)
+
+    def needs_to_use_new_api(self):
+        return len(self.num_id) != 0
 
     # Load channel information from API
     def load_channel_info(self):
-        try:
-            response = urllib2.urlopen(Utils.url_get_channel_info(self.id))
-        except urllib2.HTTPError, e:
-            if e.code == 404:
-                message = "This channel may not be published."
-                raise BusinessException(message)
-        r_str = response.read().encode('utf-8')[9:-3]
-        r_json = json.loads(r_str)
+        # if num_id was specified, use new api
 
-        self.count = r_json["count"]
-        self.sound_url = (r_json["moviePath"])["pc"]
-        self.title = r_json["title"]
-        self.file_name = (r_json["moviePath"])["pc"].split("/")[-1]
-        self.updated_at = r_json["update"]
-        self.thumb_url = Consts.BASE_URL + r_json["thumbnailPath"]
-        self.thumb_file_name = r_json["thumbnailPath"].split("/")[-1]
+        if self.needs_to_use_new_api():
+            bearer_token = UserSettings.get("bearer_token")
+            if not bearer_token:
+                raise BusinessException(u"Bearer Token is not specified in user_settings.yml.")
+
+            try:
+                url = u"https://app.onsen.ag/api/me/programs/" + self.num_id
+                headers = {'Host': 'app.onsen.ag',
+                           'X-Device-Os': 'ios',
+                           'Accept': '*/*',
+                           'Accept-Version': 'v3',
+                           'Authorization': 'Bearer ' + bearer_token,
+                           'X-Device-Name': 'XXX',
+                           'Accept-Language': 'ja-JP;q=1.0',
+                           'Content-Type': 'application/json',
+                           'X-Device-Identifier': '876DD8394-3847-1123-9000-83746DDFA876',
+                           'User-Agent': 'iOS/Onsen/2.6.1',
+                           'X-App-Version': '25'
+                    }
+                
+                req = urllib2.Request(url, None, headers)
+                response = urllib2.urlopen(req)
+            except urllib2.HTTPError, e:
+                if e.code == 404:
+                    message = "This channel may not be published."
+                    raise BusinessException(message)
+                else:
+                    raise BusinessException(u"Unexpected error occured.")
+            
+            r_str = response.read()
+            r_json = json.loads(r_str)
+            latest_episode = (r_json["episodes"])[0]
+
+            self.count = latest_episode["title"]
+            self.m3u8_file_url = ((latest_episode["episode_files"])[0])["media_url"]
+            self.title = r_json["title"]
+            self.file_name = self.m3u8_file_url.split("/")[-2]
+            self.updated_at = dateutil.parser.parse(latest_episode["updated_on"]).strftime('%Y.%m.%d')
+            self.thumb_url = (r_json["program_image"])["video_url"]
+            self.thumb_file_name = self.thumb_url.split("/")[-1]
+           
+        else:
+            try:
+                response = urllib2.urlopen(Utils.url_get_channel_info(self.id))
+            except urllib2.HTTPError, e:
+                if e.code == 404:
+                    message = "This channel may not be published."
+                    raise BusinessException(message)
+            r_str = response.read().encode('utf-8')[9:-3]
+            r_json = json.loads(r_str)
+
+            self.count = r_json["count"]
+            self.sound_url = (r_json["moviePath"])["pc"]
+            self.title = r_json["title"]
+            self.file_name = (r_json["moviePath"])["pc"].split("/")[-1]
+            self.updated_at = r_json["update"]
+            self.thumb_url = Consts.BASE_URL + r_json["thumbnailPath"]
+            self.thumb_file_name = r_json["thumbnailPath"].split("/")[-1]
 
 
 class Downloader:
     # Download Channel
     @staticmethod
     def downloadChannel(channel):
-
-        try:
-            response = urllib2.urlopen(channel.sound_url)
-        except urllib2.HTTPError, e:
-            if e.code == 404:
-                message = "This episode may not be published."
-                raise BusinessException(message)
-
+        
         dir_path = Utils.radio_save_dir_path(channel)
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
-
+    
         file_path = Utils.radio_save_file_path(channel)
         if os.path.exists(file_path):
             raise BusinessException("Already Downloaded:"
-                                    + file_path)
+                                        + file_path)
 
-        out = open(dir_path + channel.file_name, "wb")
-        out.write(response.read())
+        mp3_file_path = u""
+
+        if channel.needs_to_use_new_api():
+            # download m3u8 plist file with ffmpeg
+            mp4_file_path = dir_path + channel.file_name 
+            mp3_file_path = dir_path + channel.file_name_without_extension() + ".mp3"
+
+            cmd = '''\
+                ffmpeg \
+                -protocol_whitelist file,http,https,tcp,tls,crypto \
+                -i "{m3u8_file_url}" \
+                -c copy {file_path}
+                -user_agent "AppleCoreMedia/1.0.0.16A366 (iPhone; U; CPU OS 12_0 like Mac OS X; ja_jp)" \
+                -headers "Accept: */*" \
+                -headers "Accept-Language: ja-jp" \
+                -headers "Accept-Encoding: gzip" \
+                -headers "Connection: keep-alive" \
+                -vn \
+                '''.format(m3u8_file_url = channel.m3u8_file_url, file_path = mp4_file_path).strip()
+            subprocess.call(cmd, shell=True)
+
+            cmd = 'ffmpeg -y -i {mp4_file_path} -ab 192k {mp3_file_path}'.format(mp4_file_path = mp4_file_path, mp3_file_path = mp3_file_path)
+            subprocess.call(cmd, shell=True)
+
+        else:
+            # download mp3 file directly
+            try:
+                response = urllib2.urlopen(channel.sound_url)
+            except urllib2.HTTPError, e:
+                if e.code == 404:
+                    message = "This episode may not be published."
+                    raise BusinessException(message)
+                else:
+                    raise BusinessException(u"Unexpected error occured.")
+    
+            mp3_file_path = dir_path + channel.file_name
+            out = open(mp3_file_path, "wb")
+            out.write(response.read())
 
         # embed id3 tag
-        Utils.embed_id3_tag(dir_path + channel.file_name, channel)
+        Utils.embed_id3_tag(mp3_file_path, channel)
+
 
     @staticmethod
     def download_thumbnail(channel):
@@ -258,6 +350,7 @@ class Main:
                     continue
                 
                 Downloader.downloadChannel(c)
+
             except BusinessException, e:
                 msg = "Not downloaded: " + c_id + ", because: " + e.value
                 logging.info(msg)
